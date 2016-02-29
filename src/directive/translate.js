@@ -262,23 +262,26 @@ function translateDirective($translate, $q, $interpolate, $compile, $parse, $roo
 
             $translate(translationId, interpolateParams, translateInterpolation, defaultTranslationText, scope.translateLanguage)
               .then(function (translation) {
-                applyTranslation(translation, scope, true, translateAttr);
+                // @mlent: Pass translation id for later comparison
+                applyTranslation(translation, scope, true, translateAttr, translationId); 
               }, function (translationId) {
-                applyTranslation(translationId, scope, false, translateAttr);
+                applyTranslation(translationId, scope, false, translateAttr, translationId);
               });
           } else {
             // as an empty string cannot be translated, we can solve this using successful=false
-            applyTranslation(translationId, scope, false, translateAttr);
+            applyTranslation(translationId, scope, false, translateAttr, translationId);
           }
         };
 
-        var applyTranslation = function (value, scope, successful, translateAttr) {
+        var applyTranslation = function (value, scope, successful, translateAttr, translationId) {
           if (translateAttr === 'translate') {
             // default translate into innerHTML
             if (!successful && typeof scope.defaultText !== 'undefined') {
               value = scope.defaultText;
             }
-            iElement.empty().append(scope.preText + value + scope.postText);
+            if (value !== translationId) { // @mlent: Do not populate frags
+              iElement.empty().append(scope.preText + value + scope.postText);
+            }
             var globallyEnabled = $translate.isPostCompilingEnabled();
             var locallyDefined = typeof tAttr.translateCompile !== 'undefined';
             var locallyEnabled = locallyDefined && tAttr.translateCompile !== 'false';
@@ -296,7 +299,9 @@ function translateDirective($translate, $q, $interpolate, $compile, $parse, $roo
               attributeName = attributeName.substr(5);
             }
             attributeName = attributeName.substr(15);
-            iElement.attr(attributeName, value);
+            if (value !== translationId) { // @mlent: Do not set attrs to frags
+              iElement.attr(attributeName, value);
+            }
           }
         };
 
